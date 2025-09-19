@@ -8,4 +8,4 @@ services:
     staticPublishPath: ./frontend/build
     envVars:
       - key: REACT_APP_API_URL
-        value: https://quotefetcher-pmn74vfni-cmutyala-asuedus-projects.vercel.app
+        value: https://quotefetcher.vercel.app
