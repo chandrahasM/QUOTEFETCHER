@@ -1,5 +1,5 @@
 services:
-  # Frontend Service (Backend now deployed on AWS Lambda)
+  # Frontend Service (Backend now deployed on Vercel)
   - type: web
     name: quotefetcher-frontend
     env: static
@@ -8,4 +8,4 @@ services:
     staticPublishPath: ./frontend/build
     envVars:
       - key: REACT_APP_API_URL
-        value: https://sretpn4vl9.execute-api.us-east-1.amazonaws.com/dev
+        value: https://quotefetcher-pmn74vfni-cmutyala-asuedus-projects.vercel.app
