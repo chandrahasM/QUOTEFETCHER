@@ -26,66 +26,11 @@ The Random Quote Fetcher is a modern web application that scrapes quotes from [q
 - **Loading States**: Visual feedback during quote fetching process
 
 ## 🖼️ User Interface Screenshots
+<img width="941" height="424" alt="image" src="https://github.com/user-attachments/assets/6291185e-e4d8-4a56-bd67-b16738e531c7" />
 
-### Main Application Interface
+<img width="940" height="447" alt="image" src="https://github.com/user-attachments/assets/b0880176-4b6c-4ad8-a873-ff78fc3c0100" />
 
-The main interface consists of three main panels:
 
-1. **Left Panel - Actions**: Contains navigation controls and instructions
-2. **Center Panel - Grid**: Displays the 100x3 grid of quote cells  
-3. **Right Panel - Details**: Shows detailed information about selected quotes
-
-**Interface Layout:**
-- **Header**: Blue 'Q' icon with "Random Quote Fetcher" title and version v0.1.0
-- **Left Panel**: Action controls with keyboard shortcuts and loading stages
-- **Center Panel**: 100x3 grid (300 cells total) showing quotes in black cells with white text
-- **Right Panel**: Detailed quote information including author, tags, and source links
-
-**Key Visual Elements:**
-- Grid cells display partial quotes like "The world as we...", "It is our choices,..."
-- Selected cells show full quote details in the right panel
-- Loading states are indicated by gray cells with progress messages
-- Clean, modern design with white background and clear typography
-
-### Application in Action
-
-This shows the application running locally at `http://localhost:3000` with:
-
-**Active States:**
-- **Loading Cells**: Gray cells displaying "Browsing to page #X..." messages
-- **Empty Cells**: White cells showing "Empty" placeholder text
-- **Real-time Updates**: Visual feedback during the quote fetching process
-
-**User Interaction:**
-- **Navigation**: Arrow keys to move between cells
-- **Selection**: Bulk selection with Shift + Arrow Keys
-- **Fetching**: Space bar to fetch quotes for focused/selected cells
-- **Loading Stages**: Three-stage loading process (Starting fetch → Logging in → Browsing to page)
-
-**Technical Details:**
-- Grid shows 5 visible rows × 3 columns with scroll capability
-- Loading states provide clear user feedback
-- Responsive design adapts to different screen sizes
-
-### Visual Design System
-
-**Color Scheme:**
-- **Primary**: Blue (#2563eb) for branding and focus states
-- **Background**: White (#ffffff) for clean, modern look
-- **Grid Cells**: Black (#000000) with white text for high contrast
-- **Loading States**: Gray (#6b7280) for active/loading cells
-- **Empty States**: White background with black text
-
-**Typography:**
-- **Headers**: Bold, large text for clear hierarchy
-- **Body Text**: Clean, readable font for quotes and descriptions
-- **UI Elements**: Consistent sizing and spacing
-
-**Layout Principles:**
-- **Three-Panel Design**: Actions | Grid | Details
-- **Responsive Breakpoints**: Mobile-first approach
-- **Grid System**: 100 rows × 3 columns for optimal content density
-- **Visual Hierarchy**: Clear distinction between different UI elements
 
 ## 🏗️ Architecture
 
