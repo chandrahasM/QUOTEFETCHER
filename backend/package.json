@@ -1,0 +1,32 @@
+{
+  "name": "quote-fetcher-backend",
+  "version": "1.0.0",
+  "description": "Backend for Random Quote Fetcher with Puppeteer scraping",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "scrape": "node src/scraper.js"
+  },
+  "keywords": [
+    "puppeteer",
+    "scraping",
+    "quotes",
+    "api"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "puppeteer": "^21.5.2",
+    "swagger-jsdoc": "^6.2.8",
+    "swagger-ui-express": "^5.0.1",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
+
