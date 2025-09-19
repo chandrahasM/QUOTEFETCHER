@@ -1,0 +1,31 @@
+services:
+  # Backend Service
+  - type: web
+    name: quotefetcher-backend
+    env: node
+    plan: free
+    buildCommand: cd backend && npm install
+    startCommand: cd backend && npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: PUPPETEER_MAX_CONCURRENT_TABS
+        value: 5
+      - key: PUPPETEER_MAX_PAGES
+        value: 10
+      - key: PUPPETEER_TIMEOUT
+        value: 30000
+    healthCheckPath: /health
+
+  # Frontend Service
+  - type: web
+    name: quotefetcher-frontend
+    env: static
+    plan: free
+    buildCommand: cd frontend && npm install && npm run build
+    staticPublishPath: ./frontend/build
+    envVars:
+      - key: REACT_APP_API_URL
+        value: https://quotefetcher-backend.onrender.com
