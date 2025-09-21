@@ -5,13 +5,15 @@ provider:
   runtime: nodejs18.x
   region: us-east-1
   stage: ${opt:stage, 'dev'}
-  memorySize: 1024
-  timeout: 30
+  memorySize: 3008
+  timeout: 300
   environment:
     NODE_ENV: production
     PUPPETEER_MAX_CONCURRENT_TABS: 5
     PUPPETEER_MAX_PAGES: 10
     PUPPETEER_TIMEOUT: 30000
+    PUPPETEER_SKIP_CHROMIUM_DOWNLOAD: true
+    PUPPETEER_EXECUTABLE_PATH: /opt/chrome/chrome
   iamRoleStatements:
     - Effect: Allow
       Action:
@@ -23,6 +25,8 @@ provider:
 functions:
   api:
     handler: src/lambda.handler
+    layers:
+      - arn:aws:lambda:us-east-1:764866452798:layer:chrome-aws-lambda:25
     events:
       - http:
           path: /{proxy+}

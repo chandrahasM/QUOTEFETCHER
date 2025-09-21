@@ -1,6 +1,20 @@
-const puppeteer = require('puppeteer');
 const { QuoteSchema, ScrapingConfigSchema } = require('./schemas');
 require('dotenv').config();
+
+// Dynamic imports for different environments
+let puppeteer, chromium;
+
+// Check if we're in Lambda environment
+const isLambda = process.env.AWS_LAMBDA_FUNCTION_NAME;
+
+if (isLambda) {
+  // Lambda environment
+  puppeteer = require('puppeteer-core');
+  chromium = require('chrome-aws-lambda');
+} else {
+  // Local development environment
+  puppeteer = require('puppeteer');
+}
 
 // Login credentials from environment variables
 const QUOTES_USERNAME = process.env.QUOTES_USERNAME;
@@ -21,19 +35,35 @@ class QuoteScraper {
 
   async initialize() {
     console.log('🚀 Initializing Puppeteer browser...');
-    this.browser = await puppeteer.launch({
-      headless: true,
-      args: [
-        '--no-sandbox',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--no-zygote',
-        '--disable-gpu'
-      ]
-    });
-    console.log('✅ Browser initialized successfully');
+    
+    if (isLambda) {
+      // Lambda configuration
+      console.log('🌐 Running in AWS Lambda environment');
+      this.browser = await chromium.puppeteer.launch({
+        args: chromium.args,
+        defaultViewport: chromium.defaultViewport,
+        executablePath: await chromium.executablePath,
+        headless: chromium.headless,
+        ignoreHTTPSErrors: true,
+      });
+      console.log('✅ Browser initialized for AWS Lambda');
+    } else {
+      // Local development configuration
+      console.log('💻 Running in local development environment');
+      this.browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--no-first-run',
+          '--no-zygote',
+          '--disable-gpu'
+        ]
+      });
+      console.log('✅ Browser initialized for local development');
+    }
     
     // Try to login if credentials are provided
     if (QUOTES_USERNAME && QUOTES_PASSWORD) {
@@ -74,15 +104,15 @@ class QuoteScraper {
       console.log(`📄 Page ${currentPage}: Found ${firstPageQuotes} quotes`);
       
       // Iterate through pages until no "Next" button
-      while (hasNextPage && currentPage < 50) { // Safety limit to prevent infinite loops
+      while (hasNextPage && currentPage < 20) { // Reduced limit for Lambda (was 50)
         // Check if there's a "Next" button
         const nextButton = await page.$('.pager .next a');
         
         if (nextButton) {
-          // Click the next button
+          // Click the next button with optimized navigation
           await Promise.all([
             nextButton.click(),
-            page.waitForNavigation({ waitUntil: 'networkidle2' })
+            page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 10000 }) // Faster navigation
           ]);
           
           currentPage++;
@@ -104,6 +134,9 @@ class QuoteScraper {
             console.log(`⚠️ Page ${currentPage} has 0 quotes, stopping at page ${totalPages}`);
             break;
           }
+          
+          // Add small delay to prevent overwhelming the server
+          await new Promise(resolve => setTimeout(resolve, 500));
         } else {
           hasNextPage = false;
           console.log(`✅ No more "Next" button found. Total pages: ${totalPages}`);
