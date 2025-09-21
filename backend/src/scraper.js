@@ -5,7 +5,7 @@ require('dotenv').config();
 let puppeteer, chromium;
 
 // Check if we're in Lambda environment
-const isLambda = process.env.AWS_LAMBDA_FUNCTION_NAME;
+const isLambda = process.env.IS_LAMBDA === 'true' || process.env.AWS_LAMBDA_FUNCTION_NAME;
 
 if (isLambda) {
   // Lambda environment
