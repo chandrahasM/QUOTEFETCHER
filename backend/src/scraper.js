@@ -47,47 +47,98 @@ class QuoteScraper {
   }
   
   async fetchPageMetadata() {
-    console.log('📊 Fetching page metadata...');
+    console.log('📊 Fetching page metadata by clicking through all pages...');
     const page = await this.browser.newPage();
     
     try {
-      await page.goto(`${this.baseUrl}/page/1/`, { 
+      let currentPage = 1;
+      let hasNextPage = true;
+      let totalPages = 1;
+      let minQuotesPerPage = Infinity;
+      let quotesPerPageCounts = [];
+      
+      // Start from page 1
+      await page.goto(`${this.baseUrl}/page/${currentPage}/`, { 
         waitUntil: 'networkidle2',
         timeout: this.config.timeout 
       });
       
-      // Get total number of pages
-      const totalPages = await page.evaluate(() => {
-        // Check for pagination
-        const paginationItems = document.querySelectorAll('.pager .next');
-        if (paginationItems.length === 0) return 1; // Only one page
-        
-        // Try to find the last page number
-        const pageLinks = Array.from(document.querySelectorAll('.pager a'));
-        const pageNumbers = pageLinks
-          .map(link => parseInt(link.textContent.trim()))
-          .filter(num => !isNaN(num));
-        
-        return Math.max(...pageNumbers, 1);
-      });
-      
-      // Get quotes per page
-      const quotesPerPage = await page.evaluate(() => {
+      // Get quotes per page from first page
+      const firstPageQuotes = await page.evaluate(() => {
         return document.querySelectorAll('.quote').length;
       });
       
+      quotesPerPageCounts.push(firstPageQuotes);
+      minQuotesPerPage = Math.min(minQuotesPerPage, firstPageQuotes);
+      
+      console.log(`📄 Page ${currentPage}: Found ${firstPageQuotes} quotes`);
+      
+      // Iterate through pages until no "Next" button
+      while (hasNextPage && currentPage < 50) { // Safety limit to prevent infinite loops
+        // Check if there's a "Next" button
+        const nextButton = await page.$('.pager .next a');
+        
+        if (nextButton) {
+          // Click the next button
+          await Promise.all([
+            nextButton.click(),
+            page.waitForNavigation({ waitUntil: 'networkidle2' })
+          ]);
+          
+          currentPage++;
+          totalPages = currentPage;
+          
+          // Count quotes on this page
+          const quotesOnThisPage = await page.evaluate(() => {
+            return document.querySelectorAll('.quote').length;
+          });
+          
+          quotesPerPageCounts.push(quotesOnThisPage);
+          minQuotesPerPage = Math.min(minQuotesPerPage, quotesOnThisPage);
+          
+          console.log(`📄 Page ${currentPage}: Found ${quotesOnThisPage} quotes`);
+          
+          // If this page has 0 quotes, we've gone too far
+          if (quotesOnThisPage === 0) {
+            totalPages = currentPage - 1;
+            console.log(`⚠️ Page ${currentPage} has 0 quotes, stopping at page ${totalPages}`);
+            break;
+          }
+        } else {
+          hasNextPage = false;
+          console.log(`✅ No more "Next" button found. Total pages: ${totalPages}`);
+        }
+      }
+      
+      // Calculate average quotes per page for estimation
+      const avgQuotesPerPage = Math.round(quotesPerPageCounts.reduce((a, b) => a + b, 0) / quotesPerPageCounts.length);
+      
       this.pageMetadata = {
         totalPages: Math.min(totalPages, this.maxPages),
-        quotesPerPage,
-        estimatedTotalQuotes: quotesPerPage * Math.min(totalPages, this.maxPages)
+        quotesPerPage: minQuotesPerPage, // Use minimum as limiting factor
+        avgQuotesPerPage: avgQuotesPerPage, // Average for estimation
+        estimatedTotalQuotes: minQuotesPerPage * Math.min(totalPages, this.maxPages),
+        quotesPerPageCounts: quotesPerPageCounts // Debug info
       };
       
-      console.log(`✅ Metadata fetched: ${this.pageMetadata.totalPages} pages, ~${this.pageMetadata.estimatedTotalQuotes} quotes`);
+      console.log(`📊 Page analysis complete:`);
+      console.log(`   - Total pages found: ${totalPages}`);
+      console.log(`   - Quotes per page: ${quotesPerPageCounts.join(', ')}`);
+      console.log(`   - Minimum quotes per page: ${minQuotesPerPage} (limiting factor)`);
+      console.log(`   - Average quotes per page: ${avgQuotesPerPage}`);
+      console.log(`   - Estimated total quotes: ${this.pageMetadata.estimatedTotalQuotes}`);
+      
       return this.pageMetadata;
       
     } catch (error) {
       console.error('❌ Error fetching page metadata:', error);
-      this.pageMetadata = { totalPages: this.maxPages, quotesPerPage: 10, estimatedTotalQuotes: 100 };
+      this.pageMetadata = { 
+        totalPages: this.maxPages, 
+        quotesPerPage: 10, 
+        avgQuotesPerPage: 10,
+        estimatedTotalQuotes: 100,
+        quotesPerPageCounts: [10]
+      };
       return this.pageMetadata;
     } finally {
       await page.close();
@@ -406,14 +457,20 @@ class QuoteScraper {
       await this.initialize();
     }
     
-    const quotesPerPage = this.pageMetadata?.quotesPerPage || 10;
+    // Use minimum quotes per page as the limiting factor
+    const quotesPerPage = this.pageMetadata?.quotesPerPage || 10; // This is now the minimum
+    const totalPages = this.pageMetadata?.totalPages || 10;
+    const avgQuotesPerPage = this.pageMetadata?.avgQuotesPerPage || 10;
     
-    // Calculate which pages we need to fetch
+    console.log(`📊 Pagination info: minQuotesPerPage=${quotesPerPage}, avgQuotesPerPage=${avgQuotesPerPage}, totalPages=${totalPages}`);
+    
+    // Calculate which pages we need to fetch based on minimum quotes per page
     const startPage = Math.floor(offset / quotesPerPage) + 1;
     const endPage = Math.ceil((offset + limit) / quotesPerPage);
     const totalPagesToFetch = endPage - startPage + 1;
     
     console.log(`📑 Need to fetch pages ${startPage} to ${endPage} (${totalPagesToFetch} pages)`);
+    console.log(`📑 Available pages: ${totalPages}, Will fetch: ${Math.min(endPage, totalPages)}`);
     
     // Fetch all needed pages in parallel
     const pagePromises = [];
@@ -432,6 +489,7 @@ class QuoteScraper {
     // Make sure we have enough quotes to satisfy the request
     if (allQuotes.length < startIndex + limit) {
       console.warn(`⚠️ Warning: Not enough quotes fetched. Requested ${limit} quotes starting at offset ${offset}, but only got ${allQuotes.length} quotes total.`);
+      console.warn(`⚠️ This might be because we're using minimum quotes per page (${quotesPerPage}) as the limiting factor.`);
       
       // Try to fetch more pages if needed
       let additionalPage = endPage + 1;
@@ -449,6 +507,7 @@ class QuoteScraper {
     // Verify we got the requested number of quotes
     if (result.length < limit) {
       console.warn(`⚠️ Could only return ${result.length}/${limit} requested quotes. This may be all that's available.`);
+      console.warn(`⚠️ Consider using avgQuotesPerPage (${avgQuotesPerPage}) instead of minQuotesPerPage (${quotesPerPage}) for better estimates.`);
     } else {
       console.log(`✅ Successfully returning ${result.length} quotes as requested`);
     }

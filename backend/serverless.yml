@@ -28,9 +28,7 @@ functions:
           path: /{proxy+}
           method: ANY
           cors:
-            origin: 
-              - http://localhost:3000
-              - https://quotefetcher-frontend.onrender.com
+            origin: "*"
             headers:
               - Content-Type
               - X-Amz-Date
@@ -38,14 +36,12 @@ functions:
               - X-Api-Key
               - X-Amz-Security-Token
               - X-Amz-User-Agent
-            allowCredentials: true
+            allowCredentials: false
       - http:
           path: /
           method: ANY
           cors:
-            origin: 
-              - http://localhost:3000
-              - https://quotefetcher-frontend.onrender.com
+            origin: "*"
             headers:
               - Content-Type
               - X-Amz-Date
@@ -53,7 +49,7 @@ functions:
               - X-Api-Key
               - X-Amz-Security-Token
               - X-Amz-User-Agent
-            allowCredentials: true
+            allowCredentials: false
 
 plugins:
   - serverless-offline
